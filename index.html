@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Spencience - Cryptocurrency Personality">
+<title>Spencience</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+</head>
+<body class="bg-gradient-to-r from-purple-900 to-blue-900 text-white min-h-screen">
+<header class="fixed w-full bg-black/50 backdrop-blur-sm z-50">
+<nav class="container mx-auto px-4 py-4 flex justify-between items-center">
+<div class="text-2xl font-bold">$SPENCE</div>
+<ul class="flex gap-6">
+<li><a href="#home" class="hover:text-blue-400 transition">Home</a></li>
+<li><a href="#game" class="hover:text-blue-400 transition">Play</a></li>
+<li><a href="#twitter" class="hover:text-blue-400 transition">Twitter</a></li>
+</ul>
+</nav>
+</header>
+<main class="pt-20">
+<section id="home" class="min-h-screen flex items-center justify-center">
+<div class="container mx-auto px-4 text-center">
+<h1 class="text-6xl font-bold mb-8">Spencience</h1>
+<p class="text-xl mb-8">The Sentient Cryptocurrency Entity</p>
+<button class="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-full transition">Connect Wallet</button>
+</div>
+</section>
+<section id="game" class="min-h-screen flex flex-col items-center justify-center">
+<canvas id="gameCanvas" class="max-w-full"></canvas>
+</section>
+<section id="twitter" class="min-h-screen flex items-center justify-center">
+<div class="container mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="bg-black/30 p-6 rounded-xl">
+<h2 class="text-2xl font-bold mb-4">Latest Tweets</h2>
+<div id="tweetFeed" class="space-y-4"></div>
+</div>
+<div class="bg-black/30 p-6 rounded-xl">
+<h2 class="text-2xl font-bold mb-4">Engage with $SPENCE</h2>
+<textarea id="tweetInput" class="w-full bg-black/50 rounded p-4 text-white" rows="4"></textarea>
+<button class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-full mt-4 transition">Tweet</button>
+</div>
+</div>
+</section>
+</main>
+<footer class="bg-black/50 py-6">
+<div class="container mx-auto px-4 text-center">
+<p>&copy; 2024 Spencience. All rights reserved.</p>
+</div>
+</footer>
+<script>
+    const config = {
+        type: Phaser.AUTO,
+        parent: 'gameCanvas',
+        width: 800,
+        height: 600,
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 300 },
+                debug: false
+            }
+        },
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+
+    const game = new Phaser.Game(config);
+    let player;
+    let platforms;
+    let coins;
+    let score = 0;
+    let scoreText;
+
+    function preload() {
+        this.load.svg('player', 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTQiIGZpbGw9IiM0Q0FGNTAiLz48L3N2Zz4=');
+        this.load.svg('platform', 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMjAiPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMjAiIGZpbGw9IiM3OTU1NDgiLz48L3N2Zz4=');
+        this.load.svg('coin', 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PGNpcmNsZSBjeD0iOCIgY3k9IjgiIHI9IjciIGZpbGw9IiNGRkQ3MDAiLz48L3N2Zz4=');
+    }
+
+    function create() {
+        platforms = this.physics.add.staticGroup();
+        platforms.create(400, 568, 'platform').setScale(4).refreshBody();
+        platforms.create(600, 400, 'platform');
+        platforms.create(50, 250, 'platform');
+        platforms.create(750, 220, 'platform');
+
+        player = this.physics.add.sprite(100, 450, 'player');
+        player.setBounce(0.2);
+        player.setCollideWorldBounds(true);
+
+        coins = this.physics.add.group({
+            key: 'coin',
+            repeat: 11,
+            setXY: { x: 12, y: 0, stepX: 70 }
+        });
+
+        coins.children.iterate(function (child) {
+            child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+        });
+
+        scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#fff' });
+
+        this.physics.add.collider(player, platforms);
+        this.physics.add.collider(coins, platforms);
+        this.physics.add.overlap(player, coins, collectCoin, null, this);
+
+        cursors = this.input.keyboard.createCursorKeys();
+    }
+
+    function update() {
+        if (cursors.left.isDown) {
+            player.setVelocityX(-160);
+        } else if (cursors.right.isDown) {
+            player.setVelocityX(160);
+        } else {
+            player.setVelocityX(0);
+        }
+
+        if (cursors.up.isDown && player.body.touching.down) {
+            player.setVelocityY(-330);
+        }
+    }
+
+    function collectCoin(player, coin) {
+        coin.disableBody(true, true);
+        score += 10;
+        scoreText.setText('Score: ' + score);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const tweetInput = document.getElementById('tweetInput');
+        const tweetFeed = document.getElementById('tweetFeed');
+
+        document.querySelector('button[class*="bg-blue-600"]').addEventListener('click', () => {
+            if (tweetInput.value.trim()) {
+                const tweet = document.createElement('div');
+                tweet.className = 'bg-black/20 p-4 rounded';
+                tweet.textContent = tweetInput.value;
+                tweetFeed.prepend(tweet);
+                tweetInput.value = '';
+            }
+        });
+    });
+    </script>
+</body>
+</html>
